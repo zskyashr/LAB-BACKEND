@@ -1,7 +1,4 @@
 // src/articles/articles.controller.ts
-
-
-
 import {
   Controller,
   Get,
@@ -10,11 +7,13 @@ import {
   Patch,
   Param,
   Delete,
-  ParseIntPipe,  // ← Tambahkan
+  ParseIntPipe,
+  NotFoundException,
 } from '@nestjs/common';
-import { ApiTags, ApiOkResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOkResponse, ApiCreatedResponse } from '@nestjs/swagger';
 import { ArticlesService } from './articles.service';
 import { UpdateArticleDto } from './dto/update-article.dto';
+import { CreateArticleDto } from './dto/create-article.dto';
 import { ArticleEntity } from './entities/article.entity';
 
 @Controller('articles')
@@ -22,26 +21,69 @@ import { ArticleEntity } from './entities/article.entity';
 export class ArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}
 
-  // ... (POST dan GET findAll tetap sama)
-
-  @Get(':id')
-  @ApiOkResponse({ type: ArticleEntity })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.articlesService.findOne(id);
+  // CREATE ARTICLE
+  @Post()
+  @ApiCreatedResponse({ type: ArticleEntity })
+  async create(@Body() createArticleDto: CreateArticleDto) {
+    const article = await this.articlesService.create(createArticleDto);
+    return new ArticleEntity(article);
   }
 
-  @Patch(':id')
+  // GET ALL PUBLISHED ARTICLES
+  @Get()
+  @ApiOkResponse({ type: ArticleEntity, isArray: true })
+  async findAll() {
+    const articles = await this.articlesService.findAll();
+    return articles.map((article) => new ArticleEntity(article));
+  }
+
+  // GET DRAFT ARTICLES
+  @Get('drafts')
+  @ApiOkResponse({ type: ArticleEntity, isArray: true })
+  async findDrafts() {
+    const drafts = await this.articlesService.findDrafts();
+    return drafts.map((draft) => new ArticleEntity(draft));
+  }
+
+  // GET ARTICLE BY ID
+  @Get(':id')
   @ApiOkResponse({ type: ArticleEntity })
-  update(
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const article = await this.articlesService.findOne(id);
+
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+
+    return new ArticleEntity(article as any);
+  }
+
+  // UPDATE ARTICLE
+  @Patch(':id')
+  @ApiCreatedResponse({ type: ArticleEntity })
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateArticleDto: UpdateArticleDto,
   ) {
-    return this.articlesService.update(id, updateArticleDto);
+    const article = await this.articlesService.update(id, updateArticleDto);
+
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+
+    return new ArticleEntity(article);
   }
 
+  // DELETE ARTICLE
   @Delete(':id')
   @ApiOkResponse({ type: ArticleEntity })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.articlesService.remove(id);
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    const article = await this.articlesService.remove(id);
+
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+
+    return new ArticleEntity(article);
   }
 }

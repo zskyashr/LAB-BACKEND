@@ -25,9 +25,16 @@ export class ArticlesService {
   }
 
   // READ — Mengambil satu artikel berdasarkan ID
-  findOne(id: number) {
-    return this.prisma.article.findUnique({ where: { id } });
-  }
+  // src/articles/articles.service.ts
+
+findOne(id: number) {
+  return this.prisma.article.findUnique({
+    where: { id },
+    include: {
+      author: true,  // ← Sertakan data author
+    },
+  });
+}
 
   // UPDATE — Memperbarui artikel berdasarkan ID
   update(id: number, updateArticleDto: UpdateArticleDto) {
@@ -41,4 +48,5 @@ export class ArticlesService {
   remove(id: number) {
     return this.prisma.article.delete({ where: { id } });
   }
+  
 }

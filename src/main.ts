@@ -1,30 +1,32 @@
 // src/main.ts
 
-import { HttpAdapterHost, NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
-import { PrismaClientExceptionFilter } from './prisma-client-exception/prisma-client-exception.filter';
+import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Validasi input
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  // Swagger
-  const config = new DocumentBuilder()
-    .setTitle('Median')
-    .setDescription('The Median API description')
-    .setVersion('0.1')
-    .build();
+  // ✅ Aktifkan ClassSerializerInterceptor secara global
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  // src/main.ts
+
+const config = new DocumentBuilder()
+  .setTitle('Median')
+  .setDescription('The Median API description')
+  .setVersion('0.1')
+  .addBearerAuth()  // ← Tambahkan ini
+  .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  // ✅ Exception Filter untuk Prisma errors
-  const { httpAdapter } = app.get(HttpAdapterHost);
-  app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
-
   await app.listen(3000);
+
+  // src/main.ts
+
 }
 bootstrap();

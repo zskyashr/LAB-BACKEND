@@ -11,8 +11,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
- 
 }
+
+// prisma/schema.prisma
 
 model Article {
   id          Int      @id @default(autoincrement())
@@ -22,4 +23,16 @@ model Article {
   published   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  author      User?    @relation(fields: [authorId], references: [id])  // ← BARU
+  authorId    Int?                                                       // ← BARU
+}
+
+model User {                                    // ← MODEL BARU
+  id        Int       @id @default(autoincrement())
+  name      String?
+  email     String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  articles  Article[]                            // ← Relasi ke banyak artikel
 }
